@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Competitive Landscape: CDW vs. Insight vs. Connection</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Chosen Palette: Warm Professional Neutrals
+         Background: Warm Stone/Light Grey (#fafaf9)
+         Text: Dark Charcoal (#1c1917)
+         Accents: 
+            CDW: Muted Brick Red (#991b1b)
+            Insight: Deep Violet (#5b21b6)
+            Connection: Slate Blue (#0f172a)
+         UI Elements: Clean white cards with soft shadows.
+    -->
+
+    <!-- Application Structure Plan:
+         1. Header/Nav: Simple top navigation to switch between analytical views (Overview, Financials, Capabilities, Recommendation).
+         2. Executive Summary (Home): High-level textual synthesis of the "Winner" in different categories.
+         3. Comparative Financials: Interactive Bar/Pie charts showing Revenue scale and Gross Profit (Proxy for service maturity).
+         4. The Radar (Capabilities): A Radar chart comparing the three on 5 key axes (Scale, Innovation, Price, Intimacy, Services).
+         5. Deep Dive Cards: Detailed text blocks for each company with a "Strengths/Weaknesses" toggle.
+         6. Recommendation Engine: A simple interactive form where the user selects their priority (e.g., "Global Reach" or "AI Transformation") and the app highlights the best vendor.
+         
+         Why this structure? It mimics an executive presentation but allows non-linear exploration. The "Recommendation Engine" adds a layer of synthesis that static slides lack.
+    -->
+
+    <!-- Visualization & Content Choices:
+         1. Revenue Scale (Chart.js Bar): Goal -> Compare massive size difference. Interaction -> Tooltip details.
+         2. Capability Radar (Chart.js Radar): Goal -> Show qualitative strengths (CDW=Scale, Insight=Innovation, Connection=Service).
+         3. Vendor Selector (Custom JS): Goal -> Synthesis of research into actionable advice.
+         4. NO SVG/Mermaid used. Icons are CSS/Unicode.
+    -->
+
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #fafaf9; /* Stone 50 */
+            color: #1c1917; /* Stone 900 */
+        }
+        
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 800px;
+            height: 400px;
+            max-height: 500px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        /* Custom Scrollbar for text areas */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1; 
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #d6d3d1; 
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #a8a29e; 
+        }
+
+        .tab-active {
+            border-bottom: 2px solid #ea580c; /* Orange-600 */
+            color: #ea580c;
+            font-weight: 600;
+        }
+        
+        .card-hover:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            transition: all 0.2s ease-in-out;
+        }
+
+        .vendor-badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            margin-right: 5px;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+    <!-- Navigation -->
+    <nav class="bg-white border-b border-stone-200 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex items-center">
+                    <span class="text-xl font-bold tracking-tight text-stone-800">Market<span class="text-orange-600">Scan</span></span>
+                    <span class="ml-4 text-sm text-stone-500 border-l border-stone-300 pl-4 hidden md:block">IT Solutions Competitive Analysis</span>
+                </div>
+                <div class="flex space-x-8 items-center h-full" id="nav-container">
+                    <button onclick="switchTab('summary')" class="nav-btn tab-active h-full flex items-center px-1" id="btn-summary">Executive Summary</button>
+                    <button onclick="switchTab('financials')" class="nav-btn h-full flex items-center px-1 text-stone-500 hover:text-stone-900" id="btn-financials">Scale & Financials</button>
+                    <button onclick="switchTab('capabilities')" class="nav-btn h-full flex items-center px-1 text-stone-500 hover:text-stone-900" id="btn-capabilities">Strategic Capabilities</button>
+                    <button onclick="switchTab('advisor')" class="nav-btn h-full flex items-center px-1 text-stone-500 hover:text-stone-900" id="btn-advisor">Vendor Advisor</button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content Area -->
+    <main class="flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full">
+
+        <!-- VIEW: Executive Summary -->
+        <div id="view-summary" class="space-y-8 animate-fade-in block">
+            
+            <!-- Intro Text -->
+            <div class="bg-white p-8 rounded-xl shadow-sm border border-stone-100">
+                <h1 class="text-3xl font-bold text-stone-800 mb-4">The Battle for IT Orchestration</h1>
+                <p class="text-lg text-stone-600 leading-relaxed mb-6">
+                    The landscape of IT Value Added Resellers (VARs) has shifted. It is no longer just about shipping hardware logistics; it is about <strong>solutions integration</strong>. We analyzed the "Big Three" competitors—<strong>CDW</strong>, <strong>Insight</strong>, and <strong>Connection</strong>—to understand their evolving value propositions.
+                </p>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8">
+                    <!-- CDW Summary -->
+                    <div class="p-6 bg-stone-50 rounded-lg border-l-4 border-red-700">
+                        <h3 class="font-bold text-xl mb-2 text-stone-800">CDW</h3>
+                        <p class="text-sm font-semibold text-stone-500 uppercase tracking-wide mb-3">The Scale Leader</p>
+                        <p class="text-stone-600">Dominates through sheer volume, logistics excellence, and a "full-stack" portfolio. Recent acquisitions (Sirius) have bolstered their managed services, but they remain the go-to for transactional efficiency and hardware breadth.</p>
+                    </div>
+                    <!-- Insight Summary -->
+                    <div class="p-6 bg-stone-50 rounded-lg border-l-4 border-violet-700">
+                        <h3 class="font-bold text-xl mb-2 text-stone-800">Insight</h3>
+                        <p class="text-sm font-semibold text-stone-500 uppercase tracking-wide mb-3">The Solutions Integrator</p>
+                        <p class="text-stone-600">Positions itself closest to a consultancy. Heavy focus on Cloud, Data, AI, and App Modernization. They win when the conversation is about <em>transformation</em> rather than just <em>procurement</em>.</p>
+                    </div>
+                    <!-- Connection Summary -->
+                    <div class="p-6 bg-stone-50 rounded-lg border-l-4 border-blue-800">
+                        <h3 class="font-bold text-xl mb-2 text-stone-800">Connection</h3>
+                        <p class="text-sm font-semibold text-stone-500 uppercase tracking-wide mb-3">The Relationship Specialist</p>
+                        <p class="text-stone-600">Smaller footprint but higher touch. Strong vertical expertise in Healthcare and Government. They compete on agility and customer service scores, often acting as an extension of SMB/Mid-market IT teams.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Compare Table -->
+            <div class="bg-white rounded-xl shadow-sm border border-stone-100 overflow-hidden">
+                <div class="px-6 py-4 border-b border-stone-200 bg-stone-50">
+                    <h2 class="text-lg font-semibold text-stone-800">At A Glance: Competitive Positioning</h2>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full text-left text-sm">
+                        <thead>
+                            <tr class="bg-stone-100 text-stone-600">
+                                <th class="px-6 py-3 font-semibold">Feature</th>
+                                <th class="px-6 py-3 font-semibold text-red-900">CDW</th>
+                                <th class="px-6 py-3 font-semibold text-violet-900">Insight</th>
+                                <th class="px-6 py-3 font-semibold text-blue-900">Connection</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-stone-200">
+                            <tr>
+                                <td class="px-6 py-4 font-medium text-stone-800">Primary Identity</td>
+                                <td class="px-6 py-4">IT Super-Reseller</td>
+                                <td class="px-6 py-4">Solutions Integrator</td>
+                                <td class="px-6 py-4">Relationship Partner</td>
+                            </tr>
+                            <tr>
+                                <td class="px-6 py-4 font-medium text-stone-800">Ideal Client</td>
+                                <td class="px-6 py-4">Mid-to-Large Enterprise</td>
+                                <td class="px-6 py-4">Digital-Forward Ent.</td>
+                                <td class="px-6 py-4">SMB, Gov, Health</td>
+                            </tr>
+                            <tr>
+                                <td class="px-6 py-4 font-medium text-stone-800">Market Cap (Est.)</td>
+                                <td class="px-6 py-4">~$30B (High)</td>
+                                <td class="px-6 py-4">~$6B (Medium)</td>
+                                <td class="px-6 py-4">~$1.5B (Niche)</td>
+                            </tr>
+                            <tr>
+                                <td class="px-6 py-4 font-medium text-stone-800">Differentiation</td>
+                                <td class="px-6 py-4">Inventory & Speed</td>
+                                <td class="px-6 py-4">Engineering Talent</td>
+                                <td class="px-6 py-4">Customer Care</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- VIEW: Financials -->
+        <div id="view-financials" class="hidden space-y-8 animate-fade-in">
+            <!-- Context -->
+            <div class="bg-white p-6 rounded-xl shadow-sm border border-stone-100">
+                <h2 class="text-2xl font-bold text-stone-800 mb-2">Financial Scale & Reach</h2>
+                <p class="text-stone-600">
+                    Size matters in the reseller channel. Higher revenue often correlates with purchasing power, inventory depth, and the ability to finance large deals. CDW is the clear giant in the room, with revenue significantly outpacing its peers. However, Insight shows a higher percentage of revenue derived from services, indicating a more mature "consultancy" mix.
+                </p>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <!-- Revenue Chart -->
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-stone-100 flex flex-col">
+                    <h3 class="text-lg font-semibold text-stone-800 mb-4">Annual Revenue Comparison (Est. $B)</h3>
+                    <div class="flex-grow flex items-center justify-center">
+                         <div class="chart-container">
+                            <canvas id="revenueChart"></canvas>
+                        </div>
+                    </div>
+                    <p class="text-xs text-stone-500 mt-4 text-center">Based on approximate TTM figures (2024/2025 trends).</p>
+                </div>
+
+                <!-- Gross Profit Mix -->
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-stone-100 flex flex-col">
+                    <h3 class="text-lg font-semibold text-stone-800 mb-4">Focus Area: Hardware vs. Services</h3>
+                    <div class="flex-grow flex items-center justify-center">
+                        <div class="chart-container">
+                            <canvas id="mixChart"></canvas>
+                        </div>
+                    </div>
+                    <p class="text-xs text-stone-500 mt-4 text-center">Insight leads in Services mix, indicating a shift away from pure resale.</p>
+                </div>
+            </div>
+
+            <!-- Stats Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="bg-white p-6 rounded-xl shadow-sm text-center border-t-4 border-red-700">
+                    <div class="text-4xl font-bold text-stone-800 mb-1">15k+</div>
+                    <div class="text-stone-500">CDW Employees</div>
+                </div>
+                <div class="bg-white p-6 rounded-xl shadow-sm text-center border-t-4 border-violet-700">
+                    <div class="text-4xl font-bold text-stone-800 mb-1">13k+</div>
+                    <div class="text-stone-500">Insight Employees</div>
+                </div>
+                <div class="bg-white p-6 rounded-xl shadow-sm text-center border-t-4 border-blue-800">
+                    <div class="text-4xl font-bold text-stone-800 mb-1">2.5k+</div>
+                    <div class="text-stone-500">Connection Employees</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- VIEW: Strategic Capabilities -->
+        <div id="view-capabilities" class="hidden space-y-8 animate-fade-in">
+            <div class="bg-white p-6 rounded-xl shadow-sm border border-stone-100">
+                <h2 class="text-2xl font-bold text-stone-800 mb-2">Capability Radar</h2>
+                <p class="text-stone-600">
+                    We scored each vendor on five critical dimensions to visualize their strategic strengths.
+                    <br>
+                    <span class="inline-block mt-2 text-sm bg-stone-100 px-2 py-1 rounded"><strong>Innovation:</strong> Cloud/AI maturity</span>
+                    <span class="inline-block mt-2 text-sm bg-stone-100 px-2 py-1 rounded"><strong>Scale:</strong> Global reach & inventory</span>
+                    <span class="inline-block mt-2 text-sm bg-stone-100 px-2 py-1 rounded"><strong>Pricing:</strong> Purchasing power/discounts</span>
+                    <span class="inline-block mt-2 text-sm bg-stone-100 px-2 py-1 rounded"><strong>Intimacy:</strong> Account management quality</span>
+                    <span class="inline-block mt-2 text-sm bg-stone-100 px-2 py-1 rounded"><strong>Verticals:</strong> Industry specialization</span>
+                </p>
+            </div>
+
+            <div class="bg-white p-6 rounded-xl shadow-sm border border-stone-100">
+                <div class="chart-container h-96">
+                    <canvas id="radarChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Detailed Deep Dives -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- CDW Detail -->
+                <div class="bg-white rounded-xl shadow-sm overflow-hidden flex flex-col h-full card-hover">
+                    <div class="bg-red-50 p-4 border-b border-red-100">
+                        <h3 class="font-bold text-lg text-red-900">CDW: The Powerhouse</h3>
+                    </div>
+                    <div class="p-6 flex-grow">
+                        <ul class="space-y-3 text-sm text-stone-700">
+                            <li class="flex items-start"><span class="mr-2">✅</span> <strong>Inventory:</strong> Unmatched warehousing and logistics. "Full Stack" capability.</li>
+                            <li class="flex items-start"><span class="mr-2">✅</span> <strong>Acquisitions:</strong> Aggressive M&A (e.g., Sirius) has closed gaps in security and services.</li>
+                            <li class="flex items-start"><span class="mr-2">❌</span> <strong>Focus:</strong> Can feel transactional for smaller clients; massive account rep turnover.</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Insight Detail -->
+                <div class="bg-white rounded-xl shadow-sm overflow-hidden flex flex-col h-full card-hover">
+                    <div class="bg-violet-50 p-4 border-b border-violet-100">
+                        <h3 class="font-bold text-lg text-violet-900">Insight: The Innovator</h3>
+                    </div>
+                    <div class="p-6 flex-grow">
+                        <ul class="space-y-3 text-sm text-stone-700">
+                            <li class="flex items-start"><span class="mr-2">✅</span> <strong>Technical Depth:</strong> Strongest in Azure, DevOps, and Data/AI projects.</li>
+                            <li class="flex items-start"><span class="mr-2">✅</span> <strong>Modernization:</strong> Helps clients refactor apps, not just buy servers.</li>
+                            <li class="flex items-start"><span class="mr-2">❌</span> <strong>Brand:</strong> Sometimes overlooked for basic hardware fulfillment compared to CDW.</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Connection Detail -->
+                <div class="bg-white rounded-xl shadow-sm overflow-hidden flex flex-col h-full card-hover">
+                    <div class="bg-blue-50 p-4 border-b border-blue-100">
+                        <h3 class="font-bold text-lg text-blue-900">Connection: The Specialist</h3>
+                    </div>
+                    <div class="p-6 flex-grow">
+                        <ul class="space-y-3 text-sm text-stone-700">
+                            <li class="flex items-start"><span class="mr-2">✅</span> <strong>Healthcare:</strong> Market leader in health IT solutions and specific regulatory needs.</li>
+                            <li class="flex items-start"><span class="mr-2">✅</span> <strong>Service:</strong> High NPS scores; reps tend to stay longer on accounts.</li>
+                            <li class="flex items-start"><span class="mr-2">❌</span> <strong>Scale:</strong> Limited global footprint compared to the other two giants.</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- VIEW: Vendor Advisor -->
+        <div id="view-advisor" class="hidden space-y-8 animate-fade-in">
+            <div class="bg-white p-8 rounded-xl shadow-sm border border-stone-100 text-center max-w-3xl mx-auto">
+                <h2 class="text-3xl font-bold text-stone-800 mb-4">Who is right for you?</h2>
+                <p class="text-stone-600 mb-8">Select your primary business priority to see our recommendation.</p>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+                    <button onclick="recommend('scale')" class="p-4 border border-stone-200 rounded-lg hover:bg-stone-50 hover:border-orange-500 transition-colors text-left group">
+                        <span class="block font-bold text-stone-800 group-hover:text-orange-600">Global Supply Chain</span>
+                        <span class="text-sm text-stone-500">I need hardware everywhere, fast.</span>
+                    </button>
+                    <button onclick="recommend('ai')" class="p-4 border border-stone-200 rounded-lg hover:bg-stone-50 hover:border-orange-500 transition-colors text-left group">
+                        <span class="block font-bold text-stone-800 group-hover:text-orange-600">Digital Transformation</span>
+                        <span class="text-sm text-stone-500">I need AI, Cloud, and App Modernization.</span>
+                    </button>
+                    <button onclick="recommend('health')" class="p-4 border border-stone-200 rounded-lg hover:bg-stone-50 hover:border-orange-500 transition-colors text-left group">
+                        <span class="block font-bold text-stone-800 group-hover:text-orange-600">Niche Vertical (Health/Gov)</span>
+                        <span class="text-sm text-stone-500">I need specialized compliance & care.</span>
+                    </button>
+                    <button onclick="recommend('price')" class="p-4 border border-stone-200 rounded-lg hover:bg-stone-50 hover:border-orange-500 transition-colors text-left group">
+                        <span class="block font-bold text-stone-800 group-hover:text-orange-600">Pure Price/Volume</span>
+                        <span class="text-sm text-stone-500">I want the biggest catalog at low margin.</span>
+                    </button>
+                </div>
+
+                <div id="recommendation-result" class="hidden bg-stone-50 p-6 rounded-xl border border-stone-200">
+                    <h3 class="text-xl font-bold mb-2" id="rec-title"></h3>
+                    <p class="text-stone-700" id="rec-desc"></p>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-white border-t border-stone-200 mt-auto">
+        <div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+            <p class="text-center text-stone-400 text-sm">
+                Generated for Competitive Analysis • Confidential • Internal Use Only
+            </p>
+        </div>
+    </footer>
+
+    <script>
+        // --- State Management ---
+        const state = {
+            currentTab: 'summary'
+        };
+
+        // --- Navigation Logic ---
+        function switchTab(tabId) {
+            // Update State
+            state.currentTab = tabId;
+
+            // Update UI: Buttons
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                btn.classList.remove('tab-active', 'text-stone-900');
+                btn.classList.add('text-stone-500');
+            });
+            const activeBtn = document.getElementById(`btn-${tabId}`);
+            activeBtn.classList.add('tab-active');
+            activeBtn.classList.remove('text-stone-500');
+
+            // Update UI: Content Views
+            document.querySelectorAll('[id^="view-"]').forEach(view => {
+                view.classList.add('hidden');
+            });
+            document.getElementById(`view-${tabId}`).classList.remove('hidden');
+
+            // Trigger chart resize if needed when unhiding
+            if (tabId === 'financials') {
+                revenueChart.resize();
+                mixChart.resize();
+            }
+            if (tabId === 'capabilities') {
+                radarChart.resize();
+            }
+        }
+
+        // --- Recommendation Logic ---
+        function recommend(type) {
+            const resultBox = document.getElementById('recommendation-result');
+            const title = document.getElementById('rec-title');
+            const desc = document.getElementById('rec-desc');
+            
+            resultBox.classList.remove('hidden');
+            resultBox.classList.remove('bg-red-50', 'bg-violet-50', 'bg-blue-50', 'border-red-200', 'border-violet-200', 'border-blue-200');
+
+            if (type === 'scale' || type === 'price') {
+                resultBox.classList.add('bg-red-50', 'border-red-200');
+                title.textContent = "Recommendation: CDW";
+                title.className = "text-xl font-bold mb-2 text-red-900";
+                desc.textContent = "For pure global scale, inventory availability, and purchasing power, CDW is the heavyweight champion. Their logistical capabilities are unmatched, making them the safest bet for large volume procurement.";
+            } else if (type === 'ai') {
+                resultBox.classList.add('bg-violet-50', 'border-violet-200');
+                title.textContent = "Recommendation: Insight";
+                title.className = "text-xl font-bold mb-2 text-violet-900";
+                desc.textContent = "If your goal is modernizing applications, migrating complex workloads to the cloud, or implementing AI, Insight's engineering talent is superior. They act more like a systems integrator than a traditional reseller.";
+            } else if (type === 'health') {
+                resultBox.classList.add('bg-blue-50', 'border-blue-200');
+                title.textContent = "Recommendation: Connection";
+                title.className = "text-xl font-bold mb-2 text-blue-900";
+                desc.textContent = "For specialized verticals like Healthcare, Connection has deep regulatory knowledge and specialized practice areas. Their high-touch service model is ideal for organizations that want a partner who knows their name.";
+            }
+        }
+
+        // --- Chart Initialization ---
+        document.addEventListener('DOMContentLoaded', () => {
+            
+            // 1. Revenue Chart
+            const ctxRev = document.getElementById('revenueChart').getContext('2d');
+            window.revenueChart = new Chart(ctxRev, {
+                type: 'bar',
+                data: {
+                    labels: ['CDW', 'Insight', 'Connection'],
+                    datasets: [{
+                        label: 'Annual Revenue ($B)',
+                        data: [21.5, 9.2, 2.8], // Approximate recent figures
+                        backgroundColor: [
+                            'rgba(153, 27, 27, 0.8)', // CDW Red
+                            'rgba(91, 33, 182, 0.8)', // Insight Violet
+                            'rgba(15, 23, 42, 0.8)'  // Connection Blue
+                        ],
+                        borderRadius: 4,
+                        barPercentage: 0.6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: { display: true, text: 'Billions USD' }
+                        }
+                    }
+                }
+            });
+
+            // 2. Mix Chart (Services vs Hardware)
+            const ctxMix = document.getElementById('mixChart').getContext('2d');
+            window.mixChart = new Chart(ctxMix, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Hardware/Software', 'Services/Solutions'],
+                    datasets: [{
+                        label: 'Insight (Example Mix)',
+                        data: [70, 30], // High service mix
+                        backgroundColor: ['#e5e5e5', '#5b21b6']
+                    },
+                    {
+                        label: 'CDW (Example Mix)',
+                        data: [85, 15], // Lower service mix relative to volume
+                        backgroundColor: ['#e5e5e5', '#991b1b']
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        title: { display: true, text: 'Outer: CDW | Inner: Insight' }
+                    }
+                }
+            });
+
+            // 3. Radar Capabilities Chart
+            const ctxRadar = document.getElementById('radarChart').getContext('2d');
+            window.radarChart = new Chart(ctxRadar, {
+                type: 'radar',
+                data: {
+                    labels: ['Global Scale', 'Innovation/AI', 'Price Power', 'Customer Intimacy', 'Vertical Focus'],
+                    datasets: [{
+                        label: 'CDW',
+                        data: [10, 6, 9, 6, 7],
+                        borderColor: 'rgba(153, 27, 27, 1)',
+                        backgroundColor: 'rgba(153, 27, 27, 0.2)',
+                    }, {
+                        label: 'Insight',
+                        data: [7, 10, 7, 7, 6],
+                        borderColor: 'rgba(91, 33, 182, 1)',
+                        backgroundColor: 'rgba(91, 33, 182, 0.2)',
+                    }, {
+                        label: 'Connection',
+                        data: [5, 5, 6, 10, 9],
+                        borderColor: 'rgba(15, 23, 42, 1)',
+                        backgroundColor: 'rgba(15, 23, 42, 0.2)',
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        r: {
+                            angleLines: { color: '#e5e7eb' },
+                            grid: { color: '#e5e7eb' },
+                            pointLabels: { font: { size: 12, weight: 'bold' }, color: '#444' },
+                            suggestedMin: 0,
+                            suggestedMax: 10
+                        }
+                    }
+                }
+            });
+        });
+    </script>
+</body>
+</html>
